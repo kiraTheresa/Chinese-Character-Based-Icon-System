@@ -1,0 +1,53 @@
+{
+  "font_revision": "a4f7cf94edfb9d7ffbdfc4841de276358bd7e0f2",
+  "assets": [
+    {
+      "name": "font-sc",
+      "url": "https://raw.githubusercontent.com/adobe-fonts/source-han-sans/a4f7cf94edfb9d7ffbdfc4841de276358bd7e0f2/OTF/SimplifiedChinese/SourceHanSansSC-Medium.otf",
+      "sha256": "1df61d31687d04fd2f928a3bb6ca6cd61f0e988cc267cf317f32406edbb49f70",
+      "download_bytes": 16546328,
+      "files": [
+        "assets/fonts/SourceHanSansSC-Medium.otf"
+      ]
+    },
+    {
+      "name": "font-tc",
+      "url": "https://raw.githubusercontent.com/adobe-fonts/source-han-sans/a4f7cf94edfb9d7ffbdfc4841de276358bd7e0f2/OTF/TraditionalChinese/SourceHanSansTC-Medium.otf",
+      "sha256": "bd70262de8795ffd38f7f8320efca63c7b6c3a0b8b5cc559bbc961b6f6e92750",
+      "download_bytes": 16544772,
+      "files": [
+        "assets/fonts/SourceHanSansTC-Medium.otf"
+      ]
+    },
+    {
+      "name": "font-license",
+      "url": "https://raw.githubusercontent.com/adobe-fonts/source-han-sans/master/LICENSE.txt",
+      "sha256": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2",
+      "download_bytes": 4463,
+      "files": [
+        "assets/fonts/LICENSE.txt"
+      ]
+    },
+    {
+      "name": "opentype",
+      "url": "https://registry.npmjs.org/opentype.js/-/opentype.js-1.3.4.tgz",
+      "sha256": "891876b34f56bc0ac3a354247d53a5b7d70ede7552c274c1077567c91baf7262",
+      "download_bytes": 729650,
+      "files": [
+        "assets/vendor/opentype-1.3.4.min.js",
+        "assets/vendor/opentype-LICENSE.txt"
+      ]
+    },
+    {
+      "name": "opencc",
+      "url": "https://registry.npmjs.org/opencc-js/-/opencc-js-1.4.2.tgz",
+      "sha256": "acde2ed46fecc53eb1c329ff093886bf702975be24ace4caa3d01321167d69c8",
+      "download_bytes": 2602149,
+      "files": [
+        "assets/vendor/opencc-1.4.2.js",
+        "assets/vendor/opencc-LICENSE.txt",
+        "assets/vendor/opencc-Apache-2.0.txt"
+      ]
+    }
+  ]
+}
