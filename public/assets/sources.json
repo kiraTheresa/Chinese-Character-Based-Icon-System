@@ -48,6 +48,16 @@
         "assets/vendor/opencc-LICENSE.txt",
         "assets/vendor/opencc-Apache-2.0.txt"
       ]
+    },
+    {
+      "name": "fflate",
+      "url": "https://registry.npmjs.org/fflate/-/fflate-0.8.2.tgz",
+      "sha256": "61fd5061e2fc8e5e3e3129f7f2fec7bd78a313e1bf4becbf1cc1cc9998d141dc",
+      "download_bytes": 168507,
+      "files": [
+        "assets/vendor/fflate-0.8.2.js",
+        "assets/vendor/fflate-LICENSE.txt"
+      ]
     }
   ]
 }

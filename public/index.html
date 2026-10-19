@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="./styles.css" />
     <script defer src="./assets/vendor/opentype-1.3.4.min.js"></script>
     <script defer src="./assets/vendor/opencc-1.4.2.js"></script>
+    <script defer src="./assets/vendor/fflate-0.8.2.js"></script>
     <script defer src="./app.js"></script>
   </head>
   <body>
@@ -37,7 +38,7 @@
                 <input id="character" type="text" value="汉" placeholder="字" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="input-hint" />
                 <span class="character-count" id="character-count" aria-hidden="true">1 个字</span>
               </div>
-              <p class="field-hint" id="input-hint">输入一个你喜欢的汉字</p>
+              <p class="field-hint" id="input-hint">支持汉字、数字、字母和常见符号</p>
               <div class="sample-row" aria-label="试试这些汉字">
                 <span>试试</span>
                 <button type="button" data-character="山" aria-label="使用汉字山">山</button>
@@ -94,9 +95,20 @@
             <div class="export-section">
               <div class="export-actions">
                 <button class="download-button primary" id="download-png" type="button" disabled><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v9m-3-3 3 3 3-3M4 13v3h12v-3" /></svg><span>下载 PNG</span></button>
-                <button class="download-button secondary" id="download-svg" type="button" disabled><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v9m-3-3 3 3 3-3M4 13v3h12v-3" /></svg><span>下载 SVG</span></button>
+                <div class="svg-download" id="svg-download">
+                  <button class="download-button secondary" id="download-svg" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="svg-size-menu" disabled><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v9m-3-3 3 3 3-3M4 13v3h12v-3" /></svg><span>下载 SVG</span><svg class="menu-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg></button>
+                  <div class="svg-size-menu" id="svg-size-menu" role="menu" aria-label="选择 SVG 下载尺寸" hidden>
+                    <p class="menu-heading" role="presentation">选择尺寸</p>
+                    <button type="button" role="menuitem" tabindex="-1" data-svg-size="32"><span>32 × 32</span><span class="size-description">SVG</span></button>
+                    <button type="button" role="menuitem" tabindex="-1" data-svg-size="64"><span>64 × 64</span><span class="size-description">SVG</span></button>
+                    <button type="button" role="menuitem" tabindex="-1" data-svg-size="128"><span>128 × 128</span><span class="size-description">SVG</span></button>
+                    <button type="button" role="menuitem" tabindex="-1" data-svg-size="256"><span>256 × 256</span><span class="size-description">SVG</span></button>
+                    <button type="button" role="menuitem" tabindex="-1" data-svg-size="512"><span>512 × 512</span><span class="size-description">SVG</span></button>
+                    <button class="download-all" type="button" role="menuitem" tabindex="-1" data-svg-size="all"><span>全部下载</span><span class="size-description">5 个 SVG · ZIP</span></button>
+                  </div>
+                </div>
               </div>
-              <div class="export-notes"><span>512 × 512 像素</span><span>矢量图形，无损缩放</span></div>
+              <div class="export-notes"><span>512 × 512 像素</span><span>可选尺寸，支持全部下载</span></div>
             </div>
           </section>
         </div>
