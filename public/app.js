@@ -12,18 +12,21 @@
   const status = $('status');
   const pngButton = $('download-png');
   const svgButton = $('download-svg');
+  const copyButton = $('copy-svg');
   const svgDropdown = $('svg-download');
   const svgMenu = $('svg-size-menu');
   const svgMenuItems = Array.from(svgMenu.querySelectorAll('[data-svg-size]'));
   const svgSizes = [32, 64, 128, 256, 512];
   const minis = ['mini-32', 'mini-48', 'mini-64'].map($);
   const fontPromises = new Map();
+  const loadedFonts = new Map();
   const fontFiles = {
     simplified: './assets/fonts/SourceHanSansSC-Medium.otf',
     traditional: './assets/fonts/SourceHanSansTC-Medium.otf',
   };
   const hanCharacter = /^[\p{Unified_Ideograph}\u3007]$/u;
-  const defaultInputHint = '支持汉字、数字、字母和常见符号';
+  const defaultInputHint = '一个汉字就好，也试试数字或字母';
+  const inspirationCharacters = [...'山川日月风云松竹星河春秋花雨永安乐梦光林'];
   const letterCharacters = {
     a: '啊', b: '波', c: '春', d: '东', e: '鹅', f: '风', g: '光',
     h: '花', i: '爱', j: '江', k: '空', l: '林', m: '木', n: '南',
@@ -57,6 +60,8 @@
   let toTraditional;
   let lastCommittedInput = input.value;
   let inputNote = defaultInputHint;
+  let announcementTimer;
+  let copyFeedbackTimer;
 
   function normalizeInput(value) {
     const text = value.trim();
@@ -123,12 +128,15 @@
     const disabled = !currentIcon || composing || exporting;
     pngButton.disabled = disabled;
     svgButton.disabled = disabled;
+    copyButton.disabled = disabled;
     if (disabled) closeSvgMenu();
   }
 
   function announce(text, isError = false) {
+    window.clearTimeout(announcementTimer);
     status.textContent = text;
     status.classList.toggle('error', isError);
+    if (text) announcementTimer = window.setTimeout(() => { status.textContent = ''; }, isError ? 7000 : 4500);
   }
 
   function clearPreview(text, { loading = false, retryable = false } = {}) {
@@ -141,6 +149,7 @@
     message.textContent = text;
     retry.hidden = !retryable;
     $('output-character').textContent = '—';
+    $('stage-caption').textContent = loading ? '正在准备字样…' : '等待字样成形';
   }
 
   async function loadFont(script) {
@@ -149,7 +158,9 @@
         const response = await fetch(fontFiles[script]);
         if (!response.ok) throw new Error(`Font HTTP ${response.status}`);
         const buffer = await response.arrayBuffer();
-        return window.opentype.parse(buffer);
+        const font = window.opentype.parse(buffer);
+        loadedFonts.set(script, font);
+        return font;
       })().catch((error) => {
         fontPromises.delete(script);
         throw error;
@@ -192,16 +203,17 @@
     const script = document.querySelector('input[name="script"]:checked').value;
     const shape = document.querySelector('input[name="shape"]:checked').value;
     const scriptName = script === 'simplified' ? '简体' : '繁体';
-    $('character-count').textContent = hanCharacter.test(raw) ? '1 个字' : raw ? '不支持' : '0 个字';
+    $('character-count').textContent = hanCharacter.test(raw) ? '1 / 1' : raw ? '不支持' : '0 / 1';
     $('output-description').textContent = `${scriptName} · ${shape === 'circle' ? '圆形' : '方形'}`;
-    $('variant-note').setAttribute('aria-hidden', String(script !== 'traditional'));
     document.querySelectorAll('[data-character]').forEach((button) => {
-      button.classList.toggle('is-active', button.dataset.character === raw);
+      const active = button.dataset.character === raw;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
     });
     announce('');
 
     if (!hanCharacter.test(raw)) {
-      const explanation = !raw ? defaultInputHint : '输入不合法：不支持这个字符';
+      const explanation = !raw ? defaultInputHint : '这个字符暂不支持，换一个汉字试试';
       input.setAttribute('aria-invalid', String(Boolean(raw)));
       hint.textContent = explanation;
       hint.classList.toggle('error', Boolean(raw));
@@ -219,8 +231,13 @@
       const character = script === 'simplified' ? toSimplified(raw) : toTraditional(raw);
       if (!hanCharacter.test(character)) throw new Error('Conversion did not return one Han character');
       $('conversion-note').textContent = raw === character ? `保留${scriptName}字形「${character}」` : `${raw} → ${character}，已转换为${scriptName}`;
-      clearPreview(`正在准备${scriptName}字体…`, { loading: true });
-      const font = await loadFont(script);
+      // Cached fonts render synchronously: changing a frame or character should
+      // never flash the loading placeholder or briefly clear the export controls.
+      let font = loadedFonts.get(script);
+      if (!font) {
+        clearPreview(`首次准备${scriptName}字体，稍等片刻…`, { loading: true });
+        font = await loadFont(script);
+      }
       if (version !== renderVersion || composing) return;
       const svg = makeSvg(font, character, shape);
       if (!svg) {
@@ -229,13 +246,16 @@
         return;
       }
       currentIcon = { svg, character, shape };
+      mount.classList.add('is-entering');
       mount.innerHTML = svg;
       minis.forEach((mini) => { mini.innerHTML = svg; });
       placeholder.hidden = true;
       retry.hidden = true;
       stage.setAttribute('aria-busy', 'false');
       $('output-character').textContent = character;
+      $('stage-caption').textContent = '字形轮廓居中 · 背景透明';
       updateExportButtons();
+
     } catch (error) {
       if (version !== renderVersion) return;
       console.error('Icon generation failed:', error);
@@ -314,9 +334,16 @@
     if (!currentIcon || exporting || composing) return;
     if (format === 'svg' && size !== 'all' && !svgSizes.includes(size)) return;
     const snapshot = currentIcon;
+    const restoreFocus = document.activeElement === pngButton || document.activeElement === svgButton || svgMenu.contains(document.activeElement);
     closeSvgMenu(true);
     exporting = true;
     updateExportButtons();
+    const activeButton = format === 'png' ? pngButton : svgButton;
+    const buttonLabel = activeButton.querySelector('span');
+    const originalLabel = buttonLabel.textContent;
+    buttonLabel.textContent = '正在导出…';
+    activeButton.classList.add('is-exporting');
+    activeButton.setAttribute('aria-busy', 'true');
     const label = format === 'svg' && size === 'all' ? 'SVG 全部尺寸' : format.toUpperCase();
     announce(`正在导出 ${label}…`);
     try {
@@ -334,8 +361,53 @@
       announce(`${label} 导出失败，请重试${format === 'png' ? '，或先下载 SVG' : ''}。`, true);
     } finally {
       exporting = false;
+      buttonLabel.textContent = originalLabel;
+      activeButton.classList.remove('is-exporting');
+      activeButton.setAttribute('aria-busy', 'false');
       updateExportButtons();
+      if (restoreFocus && document.activeElement === document.body && !activeButton.disabled) {
+        activeButton.focus({ preventScroll: true });
+      }
     }
+  }
+
+  async function copySvg() {
+    if (!currentIcon || exporting || composing) return;
+    const snapshot = currentIcon;
+    const restoreFocus = document.activeElement === copyButton;
+    exporting = true;
+    updateExportButtons();
+    window.clearTimeout(copyFeedbackTimer);
+    copyButton.classList.remove('is-success');
+    copyButton.querySelector('span').textContent = '正在复制…';
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard is unavailable');
+      await navigator.clipboard.writeText(snapshot.svg);
+      copyButton.querySelector('span').textContent = '已复制 ✓';
+      copyButton.classList.add('is-success');
+      announce(`「${snapshot.character}」SVG 源码已复制，可粘贴到代码编辑器`);
+    } catch (error) {
+      copyButton.querySelector('span').textContent = '复制 SVG';
+      announce('暂时无法访问剪贴板，请使用「下载 SVG」。', true);
+    } finally {
+      exporting = false;
+      updateExportButtons();
+      if (restoreFocus && document.activeElement === document.body && !copyButton.disabled) {
+        copyButton.focus({ preventScroll: true });
+      }
+      copyFeedbackTimer = window.setTimeout(() => {
+        copyButton.querySelector('span').textContent = '复制 SVG';
+        copyButton.classList.remove('is-success');
+      }, 2500);
+    }
+  }
+
+  function chooseCharacter(character) {
+    composing = false;
+    input.value = character;
+    lastCommittedInput = character;
+    inputNote = defaultInputHint;
+    render();
   }
 
   if (!window.opentype || !window.OpenCC) {
@@ -358,13 +430,27 @@
   document.querySelectorAll('input[type="radio"]').forEach((radio) => radio.addEventListener('change', () => { if (!composing) render(); }));
   document.querySelectorAll('[data-character]').forEach((button) => {
     button.addEventListener('click', () => {
-      composing = false;
-      input.value = button.dataset.character;
-      lastCommittedInput = input.value;
-      inputNote = defaultInputHint;
-      render();
+      chooseCharacter(button.dataset.character);
     });
   });
+  $('shuffle-character').addEventListener('click', () => {
+    const candidates = inspirationCharacters.filter((character) => character !== input.value && character !== currentIcon?.character);
+    chooseCharacter(candidates[Math.floor(Math.random() * candidates.length)]);
+    announce(`换一个「${input.value}」，碰点灵感。`);
+  });
+  document.querySelectorAll('[data-surface]').forEach((button) => {
+    if (button.tagName !== 'BUTTON') return;
+    button.addEventListener('click', () => {
+      stage.dataset.surface = button.dataset.surface;
+      document.querySelectorAll('button[data-surface]').forEach((item) => {
+        item.setAttribute('aria-pressed', String(item === button));
+      });
+    });
+  });
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !composing && !event.isComposing) input.blur();
+  });
+  copyButton.addEventListener('click', copySvg);
   retry.addEventListener('click', render);
   pngButton.addEventListener('click', () => download('png'));
   svgButton.addEventListener('click', () => svgMenu.hidden ? openSvgMenu() : closeSvgMenu(true));
